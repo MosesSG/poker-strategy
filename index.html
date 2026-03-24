@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Cash Poker Strategy</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #141820;
+    --surface: #1e2430;
+    --surface2: #252d3a;
+    --border: #2e3a4a;
+    --text: #e8edf2;
+    --muted: #6b7a8d;
+    --accent: #4a9eff;
+    --gold: #f5c842;
+    --blue: #5db8f5;
+    --green: #5ecb8a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  /* NAV */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 40px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: rgba(20,24,32,0.95);
+    backdrop-filter: blur(8px); z-index: 100;
+  }
+  .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px; color: var(--text); }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+  .nav-links a:hover { color: var(--text); }
+
+  /* HERO */
+  .hero { padding: 80px 40px 60px; text-align: center; max-width: 760px; margin: 0 auto; }
+  .hero-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+  .hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(48px, 8vw, 80px); letter-spacing: 4px; line-height: 1; margin-bottom: 20px; }
+  .hero h1 span { color: var(--gold); }
+  .hero p { font-size: 16px; color: var(--muted); line-height: 1.7; max-width: 520px; margin: 0 auto 32px; }
+  .hero-tags { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .hero-tag { padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  /* SECTION */
+  section { padding: 48px 40px; max-width: 1080px; margin: 0 auto; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+
+  /* CARDS GRID */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px;
+    text-decoration: none; color: inherit;
+    transition: border-color 0.2s, transform 0.2s;
+    display: flex; flex-direction: column; gap: 12px;
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--card-accent, var(--accent)); opacity: 0; transition: opacity 0.2s;
+  }
+  .card:hover { border-color: #3a4a5e; transform: translateY(-2px); }
+  .card:hover::before { opacity: 1; }
+
+  .card-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    width: fit-content;
+  }
+  .card-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  .card h3 { font-size: 18px; font-weight: 500; line-height: 1.3; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; flex: 1; }
+
+  .card-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .card-chip { padding: 3px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  .card-arrow { font-size: 20px; color: var(--muted); margin-top: auto; transition: color 0.2s, transform 0.2s; }
+  .card:hover .card-arrow { color: var(--text); transform: translateX(4px); }
+
+  .badge-preflop  { --card-accent: var(--gold);  background: rgba(245,200,66,0.12); color: #f5c842; }
+  .badge-postflop { --card-accent: var(--blue);  background: rgba(93,184,245,0.12); color: #5db8f5; }
+  .badge-math     { --card-accent: var(--green); background: rgba(94,203,138,0.12); color: #5ecb8a; }
+  .badge-coming   { background: var(--surface2); color: var(--muted); }
+
+  /* COMING SOON */
+  .card.coming { opacity: 0.5; cursor: default; pointer-events: none; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 0 40px; }
+
+  /* FOOTER */
+  footer { padding: 32px 40px; text-align: center; }
+  footer p { font-size: 12px; color: var(--muted); }
+  footer a { color: var(--muted); text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">LIVE CASH STRATEGY</div>
+  <div class="nav-links">
+    <a href="#preflop">Preflop</a>
+    <a href="#postflop">Post-Flop</a>
+    <a href="#math">Math</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">1/2 &amp; 2/5 · No-Limit Hold'em</div>
+  <h1>LIVE CASH<br><span>STRATEGY</span><br>SYSTEM</h1>
+  <p>A complete 3-bet or fold framework for low-limit live cash games. Position-dependent ranges, iso-raise charts, post-flop heuristics, and the mental models behind every decision.</p>
+  <div class="hero-tags">
+    <span class="hero-tag">Polar 3-Bet Ranges</span>
+    <span class="hero-tag">Calling Ranges</span>
+    <span class="hero-tag">Iso-Raise Ranges</span>
+    <span class="hero-tag">Post-Flop OOP</span>
+    <span class="hero-tag">Poker Math</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<section id="preflop">
+  <div class="section-label">Preflop Ranges</div>
+  <div class="cards">
+
+    <a class="card" href="ranges/polar-3bet-ranges.pdf" style="--card-accent:var(--gold)">
+      <span class="card-badge badge-preflop"><span class="card-dot" style="background:var(--gold)"></span>Preflop</span>
+      <h3>Polar 3-Bet Ranges</h3>
+      <p>Value and bluff 3-bet hands by position — CO/BTN and BB vs EP, MP, and LP opens. 6 charts.</p>
+      <div class="card-meta">
+        <span class="card-chip">CO/BTN vs EP</span>
+        <span class="card-chip">CO/BTN vs MP</span>
+        <span class="card-chip">BB vs LP</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="card" href="ranges/calling-ranges.html" style="--card-accent:var(--gold)">
+      <span class="card-badge badge-preflop"><span class="card-dot" style="background:var(--gold)"></span>Preflop</span>
+      <h3>Calling Ranges</h3>
+      <p>Position-dependent calling ranges vs EP, MP, and LP opens. Adjusts for 100BB and 200BB stack depth.</p>
+      <div class="card-meta">
+        <span class="card-chip">6 scenarios</span>
+        <span class="card-chip">100BB / 200BB</span>
+        <span class="card-chip">Interactive</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="card" href="ranges/iso-raise-ranges.html" style="--card-accent:var(--gold)">
+      <span class="card-badge badge-preflop"><span class="card-dot" style="background:var(--gold)"></span>Preflop</span>
+      <h3>Iso-Raise Ranges</h3>
+      <p>Isolation raising strategy vs 1 or 2+ limpers from BTN, CO, HJ, and SB. Includes over-limp guidance.</p>
+      <div class="card-meta">
+        <span class="card-chip">6 scenarios</span>
+        <span class="card-chip">Sizing notes</span>
+        <span class="card-chip">Interactive</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="postflop">
+  <div class="section-label">Post-Flop</div>
+  <div class="cards">
+
+    <a class="card coming" href="#" style="--card-accent:var(--blue)">
+      <span class="card-badge badge-coming"><span class="card-dot" style="background:var(--muted)"></span>Coming soon</span>
+      <h3>OOP Post-Flop Framework</h3>
+      <p>How to continue in BB 3-bet pots out of position. Board texture heuristics, barreling frequencies, and river decisions vs wide callers.</p>
+      <div class="card-meta">
+        <span class="card-chip">BB 3-bet pots</span>
+        <span class="card-chip">Board textures</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="card coming" href="#" style="--card-accent:var(--blue)">
+      <span class="card-badge badge-coming"><span class="card-dot" style="background:var(--muted)"></span>Coming soon</span>
+      <h3>IP Post-Flop Heuristics</h3>
+      <p>C-bet sizing, turn barreling, and river decisions in 3-bet pots. Derived from the 3-Betting IP guide.</p>
+      <div class="card-meta">
+        <span class="card-chip">3-bet pots</span>
+        <span class="card-chip">Board coverage</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="math">
+  <div class="section-label">Math &amp; Fundamentals</div>
+  <div class="cards">
+
+    <a class="card coming" href="#" style="--card-accent:var(--green)">
+      <span class="card-badge badge-coming"><span class="card-dot" style="background:var(--muted)"></span>Coming soon</span>
+      <h3>Poker Math Reference</h3>
+      <p>Pot odds, equity calculation (Rule of 4 &amp; 2), implied odds, MDF, fold equity, and pot-size raise formula.</p>
+      <div class="card-meta">
+        <span class="card-chip">Pot odds</span>
+        <span class="card-chip">MDF</span>
+        <span class="card-chip">Implied odds</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="card coming" href="#" style="--card-accent:var(--green)">
+      <span class="card-badge badge-coming"><span class="card-dot" style="background:var(--muted)"></span>Coming soon</span>
+      <h3>Mental Models Reference</h3>
+      <p>All Farnam Street mental models applied to poker decisions, compiled into a single reference guide.</p>
+      <div class="card-meta">
+        <span class="card-chip">8 models</span>
+        <span class="card-chip">Interactive</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<footer>
+  <p>Built as a 3-bet or fold framework for 1/2 &amp; 2/5 live cash · <a href="https://github.com">View on GitHub</a></p>
+</footer>
+
+</body>
+</html>

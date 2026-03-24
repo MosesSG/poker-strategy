@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calling Ranges — Live Cash</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #141820;
+    --surface: #1e2430;
+    --surface2: #252d3a;
+    --border: #2e3a4a;
+    --text: #e8edf2;
+    --muted: #6b7a8d;
+    --accent: #4a9eff;
+
+    --value-bg: #f5c842;
+    --value-text: #1a1200;
+    --bluff-bg: #5db8f5;
+    --bluff-text: #041522;
+    --call-bg: #5ecb8a;
+    --call-text: #021a0c;
+    --fold-bg: #1e2430;
+    --fold-text: #38475a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    padding: 24px 16px 48px;
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 3px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  header p {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* CONTROLS */
+  .controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .control-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .tab-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .tab {
+    padding: 7px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+
+  .stack-group {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .stack-btn {
+    padding: 8px 24px;
+    background: var(--surface);
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .stack-btn + .stack-btn { border-left: 1px solid var(--border); }
+  .stack-btn:hover { color: var(--text); }
+  .stack-btn.active { background: var(--surface2); color: var(--text); font-weight: 500; }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+
+  .stat-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* CHART TITLE */
+  .chart-header {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .chart-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  .range-summary {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* GRID */
+  .grid-wrap {
+    overflow-x: auto;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 8px;
+  }
+
+  table {
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  td {
+    width: 50px;
+    height: 38px;
+    text-align: center;
+    vertical-align: middle;
+    border: 1px solid rgba(255,255,255,0.06);
+    font-family: 'DM Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    user-select: none;
+    transition: filter 0.15s;
+  }
+
+  td:hover { filter: brightness(1.2); cursor: default; }
+
+  td.value-3b { background: var(--value-bg); color: var(--value-text); }
+  td.bluff-3b  { background: var(--bluff-bg);  color: var(--bluff-text); }
+  td.call      { background: var(--call-bg);   color: var(--call-text);  }
+  td.fold      { background: var(--fold-bg);   color: var(--fold-text);  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .legend-swatch {
+    width: 16px; height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* NOTES */
+  .notes-box {
+    max-width: 720px;
+    margin: 20px auto 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+  }
+
+  .notes-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .notes-body {
+    font-size: 12.5px;
+    color: #8fa0b5;
+    line-height: 1.7;
+  }
+
+  .notes-body strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CALLING RANGES</h1>
+  <p>Position-Dependent · Live Cash · 3-Bet or Fold Framework</p>
+</header>
+
+<div class="controls">
+  <div class="control-row">
+    <span class="control-label">Position</span>
+    <div class="tab-group" id="pos-tabs">
+      <div class="tab active" data-pos="CO/BTN vs EP">CO/BTN vs EP</div>
+      <div class="tab" data-pos="CO/BTN vs MP">CO/BTN vs MP</div>
+      <div class="tab" data-pos="CO/BTN vs LP">CO/BTN vs LP</div>
+      <div class="tab" data-pos="BB vs EP">BB vs EP</div>
+      <div class="tab" data-pos="BB vs MP">BB vs MP</div>
+      <div class="tab" data-pos="BB vs LP">BB vs LP</div>
+    </div>
+  </div>
+  <div class="control-row">
+    <span class="control-label">Stack Depth</span>
+    <div class="stack-group">
+      <button class="stack-btn" data-stack="100">100BB &nbsp;(1/2)</button>
+      <button class="stack-btn active" data-stack="200">200BB &nbsp;(2/5)</button>
+    </div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-pill">
+    <div class="stat-dot" style="background:var(--call-bg)"></div>
+    <span id="call-stat">—</span>
+  </div>
+  <div class="stat-pill">
+    <div class="stat-dot" style="background:var(--value-bg)"></div>
+    <span id="value-stat">—</span>
+  </div>
+  <div class="stat-pill">
+    <div class="stat-dot" style="background:var(--bluff-bg)"></div>
+    <span id="bluff-stat">—</span>
+  </div>
+  <div class="stat-pill">
+    <div class="stat-dot" style="background:var(--fold-bg);border:1px solid var(--border)"></div>
+    <span id="fold-stat">—</span>
+  </div>
+</div>
+
+<div class="chart-header">
+  <div class="chart-title" id="chart-title">CO/BTN vs EP &nbsp;·&nbsp; 200BB</div>
+  <div class="range-summary" id="range-summary">—</div>
+</div>
+
+<div class="grid-wrap">
+  <table id="range-grid"></table>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--value-bg)"></div>Value 3-Bet</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--bluff-bg)"></div>Bluff 3-Bet</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--call-bg)"></div>Call</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--fold-bg);border:1px solid var(--border)"></div>Fold</div>
+</div>
+
+<div class="notes-box">
+  <div class="notes-title">Notes</div>
+  <div class="notes-body" id="notes-body">—</div>
+</div>
+
+<script>
+const ranks = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+
+function getHand(i, j) {
+  if (i === j) return ranks[i] + ranks[i];
+  if (i < j)   return ranks[i] + ranks[j] + 's';
+  return ranks[j] + ranks[i] + 'o';
+}
+
+function getCombos(hand) {
+  if (hand.length === 2) return 6;
+  return hand.endsWith('s') ? 4 : 12;
+}
+
+const ranges = {
+  'CO/BTN vs EP': {
+    200: {
+      value: ['AA','KK','QQ','AKs','AKo'],
+      bluff: ['A2s','T8s','97s','86s','54s'],
+      call:  ['JJ','TT','99','88','77','66','55','44','33','22',
+              'AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s',
+              'KQs','KJs','KTs','QJs','JTs','T9s','98s','87s','76s','65s',
+              'AQo','KQo'],
+      note: '<strong>Deep stacks (200BB):</strong> Call all mid/small pairs for set value. Wide suited-ace range retains implied odds. Suited connectors down to 65s playable in position. AQo and KQo can call given depth and position advantage vs EP tight range.'
+    },
+    100: {
+      value: ['AA','KK','QQ','AKs','AKo'],
+      bluff: ['A2s','T8s','97s','86s','54s'],
+      call:  ['JJ','TT','99','88','77','66','55',
+              'AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s',
+              'KQs','KJs','KTs','QJs','JTs','T9s','98s','87s',
+              'AQo'],
+      note: '<strong>Shallow stacks (100BB):</strong> Drop 22–44 — set mining needs implied odds depth doesn\'t support. Trim weaker SCs (65s, 76s). Keep strong suited-ace range and premium broadways. AQo calls; KQo becomes marginal vs EP tight range at 100BB.'
+    }
+  },
+  'CO/BTN vs MP': {
+    200: {
+      value: ['AA','KK','QQ','JJ','AKs','AQs','AKo'],
+      bluff: ['A2s','T8s','97s','86s','75s'],
+      call:  ['TT','99','88','77','66','55','44','33','22',
+              'AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s',
+              'KQs','KJs','KTs','QJs','JTs','T9s','98s','87s','76s',
+              'AQo','AJo','KQo'],
+      note: '<strong>Deep stacks (200BB):</strong> JJ moves to value 3-bet vs MP. TT becomes a call — strong but not worth inflating the pot vs a still-tight MP range. AJs and below call. AQo and AJo now call since AQs is 3-bet value.'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','AKs','AQs','AKo'],
+      bluff: ['A2s','T8s','97s','86s','75s'],
+      call:  ['TT','99','88','77','66','55',
+              'AJs','ATs','A9s','A8s','A7s','A6s','A5s',
+              'KQs','KJs','QJs','JTs','T9s','98s','87s',
+              'AQo','KQo'],
+      note: '<strong>Shallow stacks (100BB):</strong> Drop 22–44. Tighten suited-ace range to A5s+ (weaker aces lose implied odds value). Remove AJo — becomes too thin at 100BB. Stick to best broadway combos.'
+    }
+  },
+  'CO/BTN vs LP': {
+    200: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AKo','AQo','KJo','ATo'],
+      bluff: ['K9s','Q9s','75s','64s'],
+      call:  ['99','88','77','66','55','44','33','22',
+              'AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s',
+              'KQs','KJs','KTs','QJs','JTs','T9s','98s','87s','76s','65s',
+              'KQo'],
+      note: '<strong>Deep stacks (200BB):</strong> TT+, AQo, KJo, ATo all 3-bet for value vs a wide LP range. 99 drops to call. Pairs 22–88 call for implied odds. Wider SC range playable vs loose opener. KQo calls; weaker offsuit broadways fold.'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AKo','AQo','KJo','ATo'],
+      bluff: ['K9s','Q9s','75s','64s'],
+      call:  ['99','88','77','66','55',
+              'AJs','ATs','A9s','A8s',
+              'KQs','KJs','QJs','JTs','T9s','98s','87s',
+              'KQo'],
+      note: '<strong>Shallow stacks (100BB):</strong> Same 3-bet range. Call 55–99 only — implied odds thin below. Tighten suited-ace calls to A8s+. Keep best broadway suited/offsuit combos. Most SCs below T9s fold vs LP at 100BB.'
+    }
+  },
+  'BB vs EP': {
+    200: {
+      value: ['AA','KK','QQ','AKs','AQs','AKo'],
+      bluff: ['A2s','65s','54s'],
+      call:  ['JJ','TT','99','88','77','66','55','44','33','22',
+              'AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s',
+              'KQs','KJs','KTs','QJs','JTs','T9s','98s','87s','76s',
+              'AJo','ATo','KQo','KJo','QJo'],
+      note: '<strong>BB vs EP (200BB):</strong> The BB discount lets us defend wider than any other position. Call the full pair ladder. Defend most suited broadways and SCs. AJo, ATo, KJo, QJo all defensible with position on every street. EP range is tight so we don\'t face domination often.'
+    },
+    100: {
+      value: ['AA','KK','QQ','AKs','AQs','AKo'],
+      bluff: ['A2s','65s','54s'],
+      call:  ['JJ','TT','99','88','77','66','55','44',
+              'AJs','ATs','A9s','A8s','A7s','A6s','A5s',
+              'KQs','KJs','QJs','JTs','T9s','98s','87s',
+              'AJo','ATo','KQo'],
+      note: '<strong>BB vs EP (100BB):</strong> Drop 22–33 — implied odds limited. Trim weaker suited aces. Remove KJo and QJo — dominated too often by EP value range at this depth. AJo and ATo retain enough equity to call.'
+    }
+  },
+  'BB vs MP': {
+    200: {
+      value: ['AA','KK','QQ','JJ','AKs','AQs','AKo','AQo'],
+      bluff: ['T7s','97s','86s','75s','64s'],
+      call:  ['TT','99','88','77','66','55','44','33','22',
+              'AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s',
+              'KQs','KJs','KTs','QJs','JTs','T9s','T8s','98s','87s','76s','65s','54s',
+              'AJo','ATo','KQo','KJo'],
+      note: '<strong>BB vs MP (200BB):</strong> JJ moves to value 3-bet. TT calls. Full suited-ace range calls (A2s through AJs). BB discount supports wider SC defense including T8s, 65s, 54s. KJo and ATo call — MP range is still fairly strong but broader than EP.'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','AKs','AQs','AKo','AQo'],
+      bluff: ['T7s','97s','86s','75s','64s'],
+      call:  ['TT','99','88','77','66','55','44',
+              'AJs','ATs','A9s','A8s','A7s','A6s','A5s',
+              'KQs','KJs','QJs','JTs','T9s','98s','87s',
+              'AJo','ATo','KQo'],
+      note: '<strong>BB vs MP (100BB):</strong> Drop 22–33 and thin SCs. Keep core pair defense and strong suited broadways. AJo/ATo call with BB discount. KJo becomes borderline — fold vs tighter MP tendencies at 100BB.'
+    }
+  },
+  'BB vs LP': {
+    200: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','KQs','AKo','AQo','AJo'],
+      bluff: ['74s','63s','53s','52s'],
+      call:  ['99','88','77','66','55','44','33','22',
+              'ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s',
+              'KJs','KTs','K9s','QJs','QTs','JTs','T9s','98s','87s','76s','65s','54s',
+              'KQo','KJo','QJo','ATo'],
+      note: '<strong>BB vs LP (200BB):</strong> LP opens wide so our 3-bet range expands significantly (AJs, KQs, AJo as value). The calling range becomes wide and SC-heavy — LP will miss boards often giving us fold equity later. K9s, QTs, 54s all defensible at depth with position throughout.'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','KQs','AKo','AQo','AJo'],
+      bluff: ['74s','63s','53s','52s'],
+      call:  ['99','88','77','66','55','44',
+              'ATs','A9s','A8s','A7s',
+              'KJs','KTs','QJs','JTs','T9s','98s','87s','76s',
+              'KQo','KJo','ATo'],
+      note: '<strong>BB vs LP (100BB):</strong> Same 3-bet range. Tighten SC defense to 76s+. Drop thin suited aces below A7s. Keep broadway calls wide since LP range is wide — domination risk is lower. QJo marginal, lean fold.'
+    }
+  }
+};
+
+let currentPos   = 'CO/BTN vs EP';
+let currentStack = 200;
+
+function countCombos(arr) {
+  return arr.reduce((s, h) => s + getCombos(h), 0);
+}
+
+function pct(n) { return (n / 1326 * 100).toFixed(1) + '%'; }
+
+function renderGrid() {
+  const r   = ranges[currentPos][currentStack];
+  const vSet = new Set(r.value);
+  const bSet = new Set(r.bluff);
+  const cSet = new Set(r.call);
+
+  const table = document.getElementById('range-grid');
+  table.innerHTML = '';
+
+  for (let i = 0; i < 13; i++) {
+    const row = document.createElement('tr');
+    for (let j = 0; j < 13; j++) {
+      const hand = getHand(i, j);
+      const td = document.createElement('td');
+      td.textContent = hand;
+      if      (vSet.has(hand)) td.className = 'value-3b';
+      else if (bSet.has(hand)) td.className = 'bluff-3b';
+      else if (cSet.has(hand)) td.className = 'call';
+      else                     td.className = 'fold';
+      row.appendChild(td);
+    }
+    table.appendChild(row);
+  }
+
+  const vc = countCombos(r.value);
+  const bc = countCombos(r.bluff);
+  const cc = countCombos(r.call);
+  const fc = 1326 - vc - bc - cc;
+
+  document.getElementById('call-stat' ).textContent = `Call: ${pct(cc)} (${cc} combos)`;
+  document.getElementById('value-stat').textContent = `Value 3-Bet: ${pct(vc)} (${vc})`;
+  document.getElementById('bluff-stat').textContent = `Bluff 3-Bet: ${pct(bc)} (${bc})`;
+  document.getElementById('fold-stat' ).textContent = `Fold: ${pct(fc)} (${fc})`;
+
+  const stackLabel = currentStack === 200 ? '200BB  (2/5)' : '100BB  (1/2)';
+  document.getElementById('chart-title').textContent = `${currentPos}  ·  ${stackLabel}`;
+
+  const total3bet = vc + bc;
+  document.getElementById('range-summary').textContent =
+    `3-Bet: ${pct(total3bet)}   |   Call: ${pct(cc)}   |   Fold: ${pct(fc)}`;
+
+  document.getElementById('notes-body').innerHTML = r.note;
+}
+
+// Tabs
+document.querySelectorAll('#pos-tabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    currentPos = tab.dataset.pos;
+    document.querySelectorAll('#pos-tabs .tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderGrid();
+  });
+});
+
+// Stack buttons
+document.querySelectorAll('.stack-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentStack = parseInt(btn.dataset.stack);
+    document.querySelectorAll('.stack-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderGrid();
+  });
+});
+
+renderGrid();
+</script>
+</body>
+</html>

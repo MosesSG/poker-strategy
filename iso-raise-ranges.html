@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iso-Raise Ranges — Live Cash</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #141820;
+    --surface: #1e2430;
+    --surface2: #252d3a;
+    --border: #2e3a4a;
+    --text: #e8edf2;
+    --muted: #6b7a8d;
+    --accent: #4a9eff;
+    --value-bg: #f5c842;
+    --value-text: #1a1200;
+    --thin-bg: #5db8f5;
+    --thin-text: #041522;
+    --limp-bg: #5ecb8a;
+    --limp-text: #021a0c;
+    --fold-bg: #1e2430;
+    --fold-text: #38475a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; padding: 24px 16px 48px; min-height: 100vh; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 3px; color: var(--text); margin-bottom: 4px; }
+  header p { font-size: 13px; color: var(--muted); letter-spacing: 0.5px; }
+  .controls { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 24px; }
+  .control-row { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+  .control-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .tab-group { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .tab { padding: 7px 16px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+  .stack-group { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .stack-btn { padding: 8px 24px; background: var(--surface); border: none; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .stack-btn + .stack-btn { border-left: 1px solid var(--border); }
+  .stack-btn:hover { color: var(--text); }
+  .stack-btn.active { background: var(--surface2); color: var(--text); font-weight: 500; }
+  .stats-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat-pill { display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 12px; }
+  .stat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .chart-header { text-align: center; margin-bottom: 12px; }
+  .chart-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--text); }
+  .range-summary { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .grid-wrap { overflow-x: auto; display: flex; justify-content: center; padding-bottom: 8px; }
+  table { border-collapse: collapse; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  td { width: 50px; height: 38px; text-align: center; vertical-align: middle; border: 1px solid rgba(255,255,255,0.06); font-family: 'DM Mono', monospace; font-size: 10.5px; font-weight: 500; user-select: none; transition: filter 0.15s; }
+  td:hover { filter: brightness(1.2); cursor: default; }
+  td.value-iso { background: var(--value-bg); color: var(--value-text); }
+  td.thin-iso  { background: var(--thin-bg);  color: var(--thin-text); }
+  td.over-limp { background: var(--limp-bg);  color: var(--limp-text); }
+  td.fold      { background: var(--fold-bg);  color: var(--fold-text); }
+  .legend { display: flex; justify-content: center; gap: 18px; margin-top: 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+  .legend-swatch { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; }
+  .notes-box { max-width: 720px; margin: 20px auto 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; }
+  .notes-title { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .notes-body { font-size: 12.5px; color: #8fa0b5; line-height: 1.7; }
+  .notes-body strong { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ISO-RAISE RANGES</h1>
+  <p>Position-Dependent · vs Limpers · Live Cash · 1/2 &amp; 2/5</p>
+</header>
+
+<div class="controls">
+  <div class="control-row">
+    <span class="control-label">Scenario</span>
+    <div class="tab-group" id="pos-tabs">
+      <div class="tab active" data-pos="BTN vs 1 limper">BTN vs 1 limper</div>
+      <div class="tab" data-pos="BTN vs 2+ limpers">BTN vs 2+ limpers</div>
+      <div class="tab" data-pos="CO vs 1 limper">CO vs 1 limper</div>
+      <div class="tab" data-pos="CO vs 2+ limpers">CO vs 2+ limpers</div>
+      <div class="tab" data-pos="HJ vs 1 limper">HJ vs 1 limper</div>
+      <div class="tab" data-pos="SB vs limpers">SB vs limpers</div>
+    </div>
+  </div>
+  <div class="control-row">
+    <span class="control-label">Stack Depth</span>
+    <div class="stack-group">
+      <button class="stack-btn" data-stack="100">100BB &nbsp;(1/2)</button>
+      <button class="stack-btn active" data-stack="200">200BB &nbsp;(2/5)</button>
+    </div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--value-bg)"></div><span id="value-stat">—</span></div>
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--thin-bg)"></div><span id="thin-stat">—</span></div>
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--limp-bg)"></div><span id="limp-stat">—</span></div>
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--fold-bg);border:1px solid var(--border)"></div><span id="fold-stat">—</span></div>
+</div>
+
+<div class="chart-header">
+  <div class="chart-title" id="chart-title">BTN vs 1 limper · 200BB</div>
+  <div class="range-summary" id="range-summary">—</div>
+</div>
+
+<div class="grid-wrap"><table id="range-grid"></table></div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--value-bg)"></div>Value Iso-Raise</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--thin-bg)"></div>Thin Iso-Raise</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--limp-bg)"></div>Over-Limp</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--fold-bg);border:1px solid var(--border)"></div>Fold</div>
+</div>
+
+<div class="notes-box">
+  <div class="notes-title">Notes</div>
+  <div class="notes-body" id="notes-body">—</div>
+</div>
+
+<script>
+const ranks = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+function getHand(i,j){if(i===j)return ranks[i]+ranks[i];if(i<j)return ranks[i]+ranks[j]+'s';return ranks[j]+ranks[i]+'o';}
+function getCombos(h){if(h.length===2)return 6;return h.endsWith('s')?4:12;}
+
+const ranges = {
+  'BTN vs 1 limper': {
+    200: {
+      value: ['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','KQs','KJs','QJs','JTs','AKo','AQo','AJo','KQo'],
+      thin:  ['88','77','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KTs','T9s','T8s','98s','97s','87s','86s','76s','75s','65s','ATo','KJo','QJo'],
+      limp:  ['66','55','44','33','22','54s','53s','43s','64s','K9s','Q9s','J9s','J8s'],
+      note: '<strong>BTN vs 1 limper (200BB):</strong> Our widest iso-raise spot. We have position on everyone and one player to manage. Raise all strong hands and most playable suited holdings. Thin iso with suited aces and connectors that play best heads-up — they lose equity in multiway pots. Reserve over-limp for small pairs mining sets cheaply and bottom-tier SCs. <strong>Sizing: 4–5x BB + 1 BB per limper.</strong>'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','KQs','KJs','QJs','JTs','AKo','AQo','AJo','KQo'],
+      thin:  ['88','77','A9s','A8s','A7s','A5s','A4s','A3s','A2s','T9s','98s','87s','76s','65s','ATo','KJo'],
+      limp:  ['66','55','44','33','22','54s','43s'],
+      note: '<strong>BTN vs 1 limper (100BB):</strong> Same strong iso range. Trim the weakest suited aces (A6s) and thinnest SCs (T8s, 97s, 86s, 75s) — at 100BB the post-flop SPR is lower and these hands need room to navigate. Over-limp range narrows: small pairs can still mine sets in position, but the math is tighter. QJo folds — insufficient strength to iso without deeper stacks.'
+    }
+  },
+  'BTN vs 2+ limpers': {
+    200: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','ATs','KQs','AKo','AQo','AJo'],
+      thin:  ['99','88','KJs','QJs','JTs','T9s','ATo','KQo','QJo'],
+      limp:  ['77','66','55','44','33','22','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KTs','K9s','98s','97s','87s','86s','76s','75s','65s','54s','KJo'],
+      note: '<strong>BTN vs 2+ limpers (200BB):</strong> Multiple limpers means a bigger pot and more callers — bluff isos lose significant value. Tighten considerably. Value iso with strong hands and top broadway suiteds. Thin iso only with 99–88 and the best broadway connectors. Speculative hands shift to over-limp — take the cheap multiway price rather than inflating a pot where your equity gets diluted. <strong>Sizing: 5–6x BB + 1 BB per limper.</strong>'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','KQs','AKo','AQo','AJo'],
+      thin:  ['99','88','ATs','JTs','T9s','KQo'],
+      limp:  ['77','66','55','44','33','22','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KJs','KTs','98s','87s','76s','65s','54s','KJo','QJo'],
+      note: '<strong>BTN vs 2+ limpers (100BB):</strong> At 100BB you cannot justify thin isos into multiple limpers — SPR compresses and you risk playing for stacks with medium hands. Value iso only with top-tier holdings. 99–88 drop to thin iso. Almost all suited connectors and medium suited aces move to over-limp. QJo and KJo fold.'
+    }
+  },
+  'CO vs 1 limper': {
+    200: {
+      value: ['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','KQs','KJs','QJs','JTs','AKo','AQo','AJo','KQo'],
+      thin:  ['88','77','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KTs','T9s','98s','87s','76s','ATo','KJo'],
+      limp:  ['66','55','44','33','22','65s','54s','T8s','97s','86s','75s','Q9s','J9s'],
+      note: '<strong>CO vs 1 limper (200BB):</strong> Similar to BTN but BTN is still behind you. Core iso range holds the same but the weakest SCs (T8s, 97s, 86s, 75s) move to over-limp — positional certainty is lower. QJo moves to fold from CO; not strong enough without knowing BTN will fold. Value and thin iso ranges otherwise match BTN. <strong>Sizing: 4–5x BB + 1 BB per limper.</strong>'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','KQs','KJs','QJs','JTs','AKo','AQo','AJo','KQo'],
+      thin:  ['88','77','A9s','A8s','A7s','A5s','A4s','A3s','A2s','T9s','98s','87s','ATo'],
+      limp:  ['66','55','44','33','22','76s','65s','54s'],
+      note: '<strong>CO vs 1 limper (100BB):</strong> Trim weak A6s and A-rag SCs from the iso range. Over-limp range narrows — pairs below 66 only viable with a clear implied-odds situation. KJo folds from CO at 100BB: too thin without extra depth or positional certainty against BTN.'
+    }
+  },
+  'CO vs 2+ limpers': {
+    200: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','KQs','AKo','AQo'],
+      thin:  ['99','88','ATs','KJs','JTs','T9s','AJo','KQo'],
+      limp:  ['77','66','55','44','33','22','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KTs','98s','87s','76s','65s','54s','KJo','QJo'],
+      note: '<strong>CO vs 2+ limpers (200BB):</strong> With multiple limpers from CO, you still have position but multiway pots are likely. Only iso-raise hands strong enough to do well vs 2–3 callers or win preflop outright. Thin iso with 99–88 and strong broadway hands only. Everything else prefers the cheap multiway price — over-limp and play the flop.'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','KQs','AKo','AQo'],
+      thin:  ['99','ATs','JTs','AJo'],
+      limp:  ['88','77','66','55','44','33','22','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KJs','KTs','98s','87s','76s','65s','54s','KQo','KJo','QJo'],
+      note: '<strong>CO vs 2+ limpers (100BB):</strong> Very tight iso spot. Multiple callers + compressed stacks make thin isos very costly. Only iso with the top of your range. 88 drops to over-limp. KJs and broadway SCs drop to over-limp. Take the cheap multiway price with almost everything speculative.'
+    }
+  },
+  'HJ vs 1 limper': {
+    200: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','KQs','AKo','AQo'],
+      thin:  ['99','88','ATs','A9s','KJs','QJs','JTs','T9s','AJo','KQo'],
+      limp:  ['77','66','55','44','33','22','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KTs','98s','87s','76s','65s','54s','ATo','KJo','QJo'],
+      note: '<strong>HJ vs 1 limper (200BB):</strong> CO, BTN, and both blinds are still behind you — many players who can call or 3-bet. Tighten to genuinely strong hands for value iso. Thin iso with 99–88, strong suited broadways, and top connectors only. Over-limp speculative hands — facing a 3-bet or multiway pot with T8s or A4s from HJ is uncomfortable and unprofitable.'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','KQs','AKo','AQo'],
+      thin:  ['99','ATs','KJs','JTs','AJo'],
+      limp:  ['88','77','66','55','44','33','22','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KTs','98s','87s','76s','65s','54s','ATo','KQo','KJo','QJo'],
+      note: '<strong>HJ vs 1 limper (100BB):</strong> Thin isos are rarely justified from HJ at 100BB. OOP vs BTN if called, multiple players behind, shallower stacks. Iso only premiums. 88 and all speculative holdings drop to over-limp. ATo folds. KQo is a borderline over-limp in soft games.'
+    }
+  },
+  'SB vs limpers': {
+    200: {
+      value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AKo','AQo'],
+      thin:  ['99','88','AJs','ATs','KQs','KJs','AJo','KQo'],
+      limp:  ['77','66','55','44','33','22','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KTs','QJs','JTs','T9s','98s','87s','76s','65s','54s','ATo','KJo','QJo'],
+      note: '<strong>SB vs limpers (200BB):</strong> You are OOP for the entire hand. Iso-raising here isn\'t about gaining position — it\'s about thinning the field and taking control with a strong hand. Only iso with hands strong enough to play aggressively OOP. Thin iso with strong pairs and premium broadway suiteds. Complete (over-limp) with everything else — you get a big discount and position at the table matters more than isolation when you\'re stuck OOP. <strong>Sizing: 4–5x BB + 1 BB per limper.</strong>'
+    },
+    100: {
+      value: ['AA','KK','QQ','JJ','AKs','AQs','AKo','AQo'],
+      thin:  ['TT','99','AJs','KQs','AJo'],
+      limp:  ['88','77','66','55','44','33','22','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','KJs','KTs','QJs','JTs','T9s','98s','87s','76s','65s','54s','ATo','KQo','KJo','QJo'],
+      note: '<strong>SB vs limpers (100BB):</strong> Even tighter from SB at 100BB. OOP + shallow = avoid all thin spots. Only iso with hands that can handle being called by 1–2 players and playing a meaningful portion of stack OOP. TT and 99 drop to thin iso. KQo becomes a complete rather than thin iso at 100BB — insufficient EV OOP at this depth.'
+    }
+  }
+};
+
+let currentPos = 'BTN vs 1 limper';
+let currentStack = 200;
+
+function countCombos(arr){return arr.reduce((s,h)=>s+getCombos(h),0);}
+function pct(n){return (n/1326*100).toFixed(1)+'%';}
+
+function renderGrid(){
+  const r = ranges[currentPos][currentStack];
+  const vSet=new Set(r.value), tSet=new Set(r.thin), lSet=new Set(r.limp);
+  const table=document.getElementById('range-grid');
+  table.innerHTML='';
+  for(let i=0;i<13;i++){
+    const row=document.createElement('tr');
+    for(let j=0;j<13;j++){
+      const hand=getHand(i,j);
+      const td=document.createElement('td');
+      td.textContent=hand;
+      if(vSet.has(hand))td.className='value-iso';
+      else if(tSet.has(hand))td.className='thin-iso';
+      else if(lSet.has(hand))td.className='over-limp';
+      else td.className='fold';
+      row.appendChild(td);
+    }
+    table.appendChild(row);
+  }
+  const vc=countCombos(r.value),tc=countCombos(r.thin),lc=countCombos(r.limp),fc=1326-vc-tc-lc;
+  document.getElementById('value-stat').textContent=`Value Iso: ${pct(vc)} (${vc})`;
+  document.getElementById('thin-stat').textContent=`Thin Iso: ${pct(tc)} (${tc})`;
+  document.getElementById('limp-stat').textContent=`Over-limp: ${pct(lc)} (${lc})`;
+  document.getElementById('fold-stat').textContent=`Fold: ${pct(fc)} (${fc})`;
+  const stackLabel=currentStack===200?'200BB  (2/5)':'100BB  (1/2)';
+  document.getElementById('chart-title').textContent=`${currentPos}  ·  ${stackLabel}`;
+  const totalIso=vc+tc;
+  document.getElementById('range-summary').textContent=`Total Iso: ${pct(totalIso)}   |   Over-limp: ${pct(lc)}   |   Fold: ${pct(fc)}`;
+  document.getElementById('notes-body').innerHTML=r.note;
+}
+
+document.querySelectorAll('#pos-tabs .tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    currentPos=tab.dataset.pos;
+    document.querySelectorAll('#pos-tabs .tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    renderGrid();
+  });
+});
+document.querySelectorAll('.stack-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    currentStack=parseInt(btn.dataset.stack);
+    document.querySelectorAll('.stack-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderGrid();
+  });
+});
+renderGrid();
+</script>
+</body>
+</html>
