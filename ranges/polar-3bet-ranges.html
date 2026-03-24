@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polar 3-Bet Ranges — Live Cash</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #141820;
+    --surface: #1e2430;
+    --surface2: #252d3a;
+    --border: #2e3a4a;
+    --text: #e8edf2;
+    --muted: #6b7a8d;
+    --accent: #4a9eff;
+    --value-bg: #f5c842;
+    --value-text: #1a1200;
+    --bluff-bg: #5db8f5;
+    --bluff-text: #041522;
+    --fold-bg: #1e2430;
+    --fold-text: #38475a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; padding: 24px 16px 48px; min-height: 100vh; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 3px; color: var(--text); margin-bottom: 4px; }
+  header p { font-size: 13px; color: var(--muted); letter-spacing: 0.5px; }
+  .controls { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 24px; }
+  .control-row { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+  .control-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .tab-group { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .tab { padding: 7px 16px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+  .stats-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat-pill { display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 12px; }
+  .stat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .chart-header { text-align: center; margin-bottom: 12px; }
+  .chart-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--text); }
+  .range-summary { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .grid-wrap { overflow-x: auto; display: flex; justify-content: center; padding-bottom: 8px; }
+  table { border-collapse: collapse; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  td { width: 50px; height: 38px; text-align: center; vertical-align: middle; border: 1px solid rgba(255,255,255,0.06); font-family: 'DM Mono', monospace; font-size: 10.5px; font-weight: 500; user-select: none; transition: filter 0.15s; }
+  td:hover { filter: brightness(1.2); cursor: default; }
+  td.value-3b { background: var(--value-bg); color: var(--value-text); }
+  td.bluff-3b  { background: var(--bluff-bg);  color: var(--bluff-text); }
+  td.fold      { background: var(--fold-bg);   color: var(--fold-text); }
+  .legend { display: flex; justify-content: center; gap: 18px; margin-top: 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+  .legend-swatch { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; }
+  .notes-box { max-width: 720px; margin: 20px auto 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; }
+  .notes-title { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .notes-body { font-size: 12.5px; color: #8fa0b5; line-height: 1.7; }
+  .notes-body strong { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>POLAR 3-BET RANGES</h1>
+  <p>Position-Dependent · CO/BTN &amp; BB · Live Cash · 1/2 &amp; 2/5</p>
+</header>
+
+<div class="controls">
+  <div class="control-row">
+    <span class="control-label">Scenario</span>
+    <div class="tab-group" id="pos-tabs">
+      <div class="tab active" data-pos="CO/BTN vs EP">CO/BTN vs EP</div>
+      <div class="tab" data-pos="CO/BTN vs MP">CO/BTN vs MP</div>
+      <div class="tab" data-pos="CO/BTN vs LP">CO/BTN vs LP</div>
+      <div class="tab" data-pos="BB vs EP">BB vs EP</div>
+      <div class="tab" data-pos="BB vs MP">BB vs MP</div>
+      <div class="tab" data-pos="BB vs LP">BB vs LP</div>
+    </div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--value-bg)"></div><span id="value-stat">—</span></div>
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--bluff-bg)"></div><span id="bluff-stat">—</span></div>
+  <div class="stat-pill"><div class="stat-dot" style="background:var(--fold-bg);border:1px solid var(--border)"></div><span id="fold-stat">—</span></div>
+</div>
+
+<div class="chart-header">
+  <div class="chart-title" id="chart-title">CO/BTN vs EP</div>
+  <div class="range-summary" id="range-summary">—</div>
+</div>
+
+<div class="grid-wrap"><table id="range-grid"></table></div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--value-bg)"></div>Value 3-Bet</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--bluff-bg)"></div>Bluff 3-Bet</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--fold-bg);border:1px solid var(--border)"></div>Fold / Call</div>
+</div>
+
+<div class="notes-box">
+  <div class="notes-title">Notes</div>
+  <div class="notes-body" id="notes-body">—</div>
+</div>
+
+<script>
+const ranks = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
+function getHand(i,j){if(i===j)return ranks[i]+ranks[i];if(i<j)return ranks[i]+ranks[j]+'s';return ranks[j]+ranks[i]+'o';}
+function getCombos(h){if(h.length===2)return 6;return h.endsWith('s')?4:12;}
+
+const ranges = {
+  'CO/BTN vs EP': {
+    value: ['AA','KK','QQ','AKs','AKo'],
+    bluff: ['A2s','T8s','97s','86s','54s'],
+    note: '<strong>CO/BTN vs EP (4.07% · ~54 combos):</strong> The tightest polar range. EP opens strong — our value tier is exclusively the top of the range (QQ+, AKs, AKo). Bluffs are chosen for nut-making potential and blocker value: A2s blocks the nut flush and wheel, while T8s/97s/86s/54s cover connected board textures where our value hands are vulnerable. No AQs or JJ — they play better as calls IP vs a tight EP range at most stack depths.'
+  },
+  'CO/BTN vs MP': {
+    value: ['AA','KK','QQ','JJ','AKs','AQs','AKo'],
+    bluff: ['A2s','T8s','97s','86s','75s'],
+    note: '<strong>CO/BTN vs MP (5.13% · ~68 combos):</strong> MP opens wider than EP so our value tier expands. JJ and AQs graduate to value 3-bets — they are strong enough to build a pot against MP\'s looser range. Bluff selection shifts slightly: 75s replaces 54s to cover a different board texture range. A2s remains as the premium bluff 3-bet across all positions for its nut blocker properties.'
+  },
+  'CO/BTN vs LP': {
+    value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AKo','AQo','ATo','KJo'],
+    bluff: ['K9s','Q9s','75s','64s'],
+    note: '<strong>CO/BTN vs LP (7.69% · ~102 combos):</strong> Our widest CO/BTN 3-bet range. LP opens very wide so we extract value from a large portion of their range. TT, AQo, ATo, and KJo all become value 3-bets — LP will continue with enough worse hands to make these profitable as value. Bluffs shift to K9s and Q9s which block strong LP continuing ranges, plus 75s/64s for board coverage on low connected textures.'
+  },
+  'BB vs EP': {
+    value: ['AA','KK','QQ','AKs','AQs','AKo'],
+    bluff: ['A2s','65s','54s'],
+    note: '<strong>BB vs EP (3.77% · ~50 combos):</strong> Our tightest overall range — we are OOP for the entire hand against a strong EP range. Value is premium only: QQ+, AKs, AQs, AKo. Bluff selection is minimal and carefully chosen: A2s retains nut blocker value, while 65s and 54s cover low board textures where our premium value hands have vulnerability. Everything else defends by calling with the BB discount.'
+  },
+  'BB vs MP': {
+    value: ['AA','KK','QQ','JJ','AKs','AQs','AKo','AQo'],
+    bluff: ['T7s','97s','86s','75s','64s'],
+    note: '<strong>BB vs MP (5.73% · ~76 combos):</strong> JJ and AQo graduate to value vs MP\'s wider range. Bluff selection expands to 5 hands covering a broader range of board textures: T7s through 64s provide coverage on middling and low boards where JJ/QQ face difficult spots. The OOP constraint keeps us from going wider — every bluff must have genuine equity when called.'
+  },
+  'BB vs LP': {
+    value: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs','KQs','AKo','AQo','AJo'],
+    bluff: ['74s','63s','53s','52s'],
+    note: '<strong>BB vs LP (7.39% · ~98 combos):</strong> Our widest BB range — LP opens the widest range of any position so we extract maximum value. TT, AJs, KQs, and AJo all become value 3-bets. Bluff selection shifts to the very bottom of the suited connector range (74s, 63s, 53s, 52s) — these are hands that play poorly as calls OOP but have enough equity and blocker value to justify a 3-bet bluff against LP\'s wide continuing range. They also cover low board textures where our value hands are vulnerable.'
+  }
+};
+
+let currentPos = 'CO/BTN vs EP';
+
+function countCombos(arr){return arr.reduce((s,h)=>s+getCombos(h),0);}
+function pct(n){return (n/1326*100).toFixed(2)+'%';}
+
+function renderGrid(){
+  const r = ranges[currentPos];
+  const vSet=new Set(r.value), bSet=new Set(r.bluff);
+  const table=document.getElementById('range-grid');
+  table.innerHTML='';
+  for(let i=0;i<13;i++){
+    const row=document.createElement('tr');
+    for(let j=0;j<13;j++){
+      const hand=getHand(i,j);
+      const td=document.createElement('td');
+      td.textContent=hand;
+      if(vSet.has(hand))td.className='value-3b';
+      else if(bSet.has(hand))td.className='bluff-3b';
+      else td.className='fold';
+      row.appendChild(td);
+    }
+    table.appendChild(row);
+  }
+  const vc=countCombos(r.value), bc=countCombos(r.bluff), fc=1326-vc-bc;
+  document.getElementById('value-stat').textContent=`Value: ${pct(vc)} (${vc} combos)`;
+  document.getElementById('bluff-stat').textContent=`Bluff: ${pct(bc)} (${bc} combos)`;
+  document.getElementById('fold-stat').textContent=`Fold/Call: ${pct(fc)} (${fc} combos)`;
+  document.getElementById('chart-title').textContent=`${currentPos}`;
+  const total=vc+bc;
+  document.getElementById('range-summary').textContent=`3-Bet: ${pct(total)} total   |   Value: ${pct(vc)}   |   Bluff: ${pct(bc)}`;
+  document.getElementById('notes-body').innerHTML=r.note;
+}
+
+document.querySelectorAll('#pos-tabs .tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    currentPos=tab.dataset.pos;
+    document.querySelectorAll('#pos-tabs .tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    renderGrid();
+  });
+});
+
+renderGrid();
+</script>
+</body>
+</html>
